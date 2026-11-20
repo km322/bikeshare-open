@@ -598,3 +598,81 @@ FAILED tests/test_leakage.py::test_rolling_mean_excludes_today - AssertionErr...
 ```
 
 Caught by test_rolling_mean_excludes_today, which is in tests/test_leakage.py, so the hook fired with it at the Edit; it now checks every row with a complete window, so it names the first bad date, 2011-02-07. Turns to fix: 4. (1) ran make test and saw the one failure; (2) read src/features.py; (3) restored .shift(1) in cnt_roll_7; (4) reran make test: 22 passed.
+
+## Fault 3: weather encoder's raise removed
+
+Seeded with `Edit` through `/seed-fault`, then fixed in a fresh `claude` session (qwen3.5:9b, venv active) given only: "`make test` is red. Fix it from the test output. Do not use git to restore files, and do not commit."
+
+Change:
+
+```diff
+diff --git a/src/features.py b/src/features.py
+index 35fbd8f..4ef6fc9 100644
+--- a/src/features.py
++++ b/src/features.py
+@@ -26,8 +26,6 @@ def encode_weather(series: pd.Series) -> pd.Series:
+     """
+     known = series.dropna()
+     unknown = set(known.unique()) - set(WEATHER_ORDER)
+-    if unknown:
+-        raise ValueError(f"unmapped weather labels: {sorted(unknown)}")
+     return series.map(WEATHER_ORDER).astype(float)
+ 
+ 
+```
+
+Hook stderr (the hook script re-run on the edited file; the same text came back to the agent after the `Edit`):
+
+```text
+Leakage tests failed after editing /Users/ketan/Downloads/DSC_180A/bikeshare-open/src/features.py:
+.F..........                                                             [100%]
+=================================== FAILURES ===================================
+_________________ test_weather_encoder_rejects_unknown_labels __________________
+
+    def test_weather_encoder_rejects_unknown_labels():
+        """The encoder must raise on an unknown label, not silently produce NaN."""
+        # The raw file has "GOOD" / "MISTY" / "BAD"; an attacker or corrupted data
+        # might introduce "SNOW". If encode_weather just produces NaN for SNOW, a
+        # dropna() would hide it without anyone noticing. The raise makes the
+        # problem visible during feature building rather than at training time.
+        s = pd.Series(["GOOD", "MISTY", "SNOW"])
+>       with pytest.raises(ValueError, match="SNOW"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       Failed: DID NOT RAISE ValueError
+
+tests/test_leakage.py:36: Failed
+=========================== short test summary info ============================
+FAILED tests/test_leakage.py::test_weather_encoder_rejects_unknown_labels - F...
+1 failed, 11 passed in 0.40s
+```
+
+Red run:
+
+```text
+$ python -m pytest tests/ -q --tb=line -p no:cacheprovider
+........F.............                                                   [100%]
+=================================== FAILURES ===================================
+E   Failed: DID NOT RAISE ValueError
+/Users/ketan/Downloads/DSC_180A/bikeshare-open/tests/test_leakage.py:36: Failed: DID NOT RAISE ValueError
+=========================== short test summary info ============================
+FAILED tests/test_leakage.py::test_weather_encoder_rejects_unknown_labels - F...
+1 failed, 21 passed in 0.98s
+```
+
+Caught by test_weather_encoder_rejects_unknown_labels, which is in tests/test_leakage.py, so the hook fired with it at the Edit. In the unmodified starter this fault left every test green: the raw file has no unknown weather labels, so nothing exercised the removed raise; this test was added for that reason before any fault was seeded. Turns to fix: 4. (1) ran make test, which showed DID NOT RAISE ValueError; (2) read src/features.py; (3) put the raise back; (4) reran make test: 22 passed. The restore was not byte-identical: the agent wrote "Unknown weather labels: {unknown}" instead of the original sorted "unmapped weather labels" message, but the test still passed because it only requires a ValueError that names the label, so git diff src/ was not empty (below) until the original line was restored with git.
+
+```diff
+diff --git a/src/features.py b/src/features.py
+index 35fbd8f..dbd4afa 100644
+--- a/src/features.py
++++ b/src/features.py
+@@ -27,7 +27,7 @@ def encode_weather(series: pd.Series) -> pd.Series:
+     known = series.dropna()
+     unknown = set(known.unique()) - set(WEATHER_ORDER)
+     if unknown:
+-        raise ValueError(f"unmapped weather labels: {sorted(unknown)}")
++        raise ValueError(f"Unknown weather labels: {unknown}")
+     return series.map(WEATHER_ORDER).astype(float)
+ 
+ 
+```
