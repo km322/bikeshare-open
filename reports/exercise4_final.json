@@ -1,0 +1,39 @@
+{
+  "split": "test",
+  "level": "cnt_roll_28",
+  "n_train": 306,
+  "n_test": 184,
+  "baselines": {
+    "baseline_mean": {
+      "r2": -1.7717,
+      "mae": 2659.6
+    },
+    "baseline_persistence": {
+      "r2": 0.5099,
+      "mae": 840.1
+    }
+  },
+  "transforms": {
+    "cnt": {
+      "ridge": {
+        "r2": 0.6239,
+        "mae": 879.3
+      },
+      "hgb": {
+        "r2": -0.46,
+        "mae": 1952.4
+      }
+    },
+    "diff_roll28": {
+      "ridge": {
+        "r2": 0.635,
+        "mae": 856.7
+      },
+      "hgb": {
+        "r2": 0.6335,
+        "mae": 731.8
+      }
+    }
+  },
+  "chosen": "diff_roll28"
+}
