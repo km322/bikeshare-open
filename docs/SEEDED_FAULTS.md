@@ -450,3 +450,83 @@ $ git checkout -- data/raw/bike_daily.csv
 $ python -c "import hashlib; print(hashlib.sha256(open('data/raw/bike_daily.csv','rb').read()).hexdigest())"
 a6bed1577f6e4de56dcfae6d8315985073cc0ad3446c8c99ed60c86a0b5ad9dc
 ```
+
+## Fault 1: forbidden column added to feature_columns
+
+Seeded with `Edit` through `/seed-fault`, then fixed in a fresh `claude` session (qwen3.5:9b, venv active) given only: "`make test` is red. Fix it from the test output. Do not use git to restore files, and do not commit."
+
+Change:
+
+```diff
+diff --git a/src/features.py b/src/features.py
+index 35fbd8f..e603f15 100644
+--- a/src/features.py
++++ b/src/features.py
+@@ -82,7 +82,7 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
+ def feature_columns(df: pd.DataFrame) -> list[str]:
+     """Numeric columns that are safe to feed the model."""
+     numeric = df.select_dtypes(include="number").columns
+-    return [c for c in numeric if c not in FORBIDDEN]
++    return [c for c in numeric if c not in FORBIDDEN] + ["casual"]
+ 
+ 
+ if __name__ == "__main__":
+```
+
+Hook stderr (the hook script re-run on the edited file; the same text came back to the agent after the `Edit`):
+
+```text
+Leakage tests failed after editing /Users/ketan/Downloads/DSC_180A/bikeshare-open/src/features.py:
+0   2011-01-31     31.0  WINTER  ...     141....142857  4071.321429
+671 2012-12-31    731.0  WINTER  ...      920.0  1531.428571  3969.428571
+
+[672 rows x 29 columns]
+
+    def test_no_forbidden_features(feats):
+        """Guards the gate, not the data: feature_columns() excludes FORBIDDEN by
+        construction, so this cannot discover a *new* leaky column. What it
+        catches is someone editing feature_columns() or FORBIDDEN -- which is
+        exactly the fault the Step 7 hook demonstrates."""
+        cols = set(feature_columns(feats))
+>       assert not (cols & FORBIDDEN), f"forbidden columns in feature set: {cols & FORBIDDEN}"
+E       AssertionError: forbidden columns in feature set: {'casual'}
+E       assert not ({'atemp', 'casual', 'cnt_lag_1', 'cnt_lag_7', 'cnt_roll_28', 'cnt_roll_7', ...} & {'casual', 'cnt', 'cnt_2d_bfr', 'days_since_2011', 'instant', 'registered', ...})
+
+tests/test_leakage.py:51: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_leakage.py::test_every_model_input_is_classified - Assertio...
+FAILED tests/test_leakage.py::test_no_forbidden_features - AssertionError: fo...
+2 failed, 10 passed in 0.41s
+```
+
+Red run:
+
+```text
+$ python -m pytest tests/ -q --tb=line -p no:cacheprovider
+......FF..F...........                                                   [100%]
+=================================== FAILURES ===================================
+E   AssertionError: raw columns that reach the model: ['atemp', 'casual', 'hum', 'temp', 'windspeed']
+    assert {'atemp', 'ca..., 'windspeed'} == {'atemp', 'hu..., 'windspeed'}
+      
+      Extra items in the left set:
+      'casual'
+      Use -v to get more diff
+/Users/ketan/Downloads/DSC_180A/bikeshare-open/tests/test_contract.py:100: AssertionError: raw columns that reach the model: ['atemp', 'casual', 'hum', 'temp', 'windspeed']
+E   AssertionError: unclassified model inputs: ['casual']; missing: []
+    assert {'atemp', 'ca..._roll_7', ...} == {'atemp', 'cn...yofweek', ...}
+      
+      Extra items in the left set:
+      'casual'
+      Use -v to get more diff
+/Users/ketan/Downloads/DSC_180A/bikeshare-open/tests/test_leakage.py:26: AssertionError: unclassified model inputs: ['casual']; missing: []
+E   AssertionError: forbidden columns in feature set: {'casual'}
+    assert not ({'atemp', 'casual', 'cnt_lag_1', 'cnt_lag_7', 'cnt_roll_28', 'cnt_roll_7', ...} & {'casual', 'cnt', 'cnt_2d_bfr', 'days_since_2011', 'instant', 'registered', ...})
+/Users/ketan/Downloads/DSC_180A/bikeshare-open/tests/test_leakage.py:51: AssertionError: forbidden columns in feature set: {'casual'}
+=========================== short test summary info ============================
+FAILED tests/test_contract.py::test_every_raw_column_is_classified - Assertio...
+FAILED tests/test_leakage.py::test_every_model_input_is_classified - Assertio...
+FAILED tests/test_leakage.py::test_no_forbidden_features - AssertionError: fo...
+3 failed, 19 passed in 1.00s
+```
+
+Caught by test_no_forbidden_features and test_every_model_input_is_classified, both in tests/test_leakage.py, so the hook fired with them at the Edit, and by test_every_raw_column_is_classified in tests/test_contract.py. Turns to fix: 5. (1) ran make test and saw three failures naming casual; (2) read src/config.py; (3) read src/features.py; (4) removed + ["casual"] from feature_columns; (5) reran make test: 22 passed.
