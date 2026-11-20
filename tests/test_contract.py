@@ -4,10 +4,25 @@ import pytest
 from sklearn.metrics import r2_score
 
 from src.config import (DATE_COL, ENCODED_COLS, FORBIDDEN, LAG_WARMUP,
-                         RAW_FEATURE_COLS, REDUNDANT_COLS, TARGET)
+                         RAW, RAW_FEATURE_COLS, REDUNDANT_COLS, TARGET)
 from src.features import build_features, feature_columns, reindex_to_calendar
-from src.ingest import load_raw
+from src.ingest import load_raw, verify_checksum
 from src.train import MODELS, temporal_split
+
+
+def test_raw_file_is_the_validated_one():
+    """A raw file replaced from Bash never passes through the Edit/Write hook."""
+    verify_checksum()
+    pass
+
+
+def test_checksum_rejects_a_modified_file(tmp_path):
+    """Dropping the last row changes the hash. Built from the last line, not a named date, so it does not depend on what the raw file contains."""
+    lines = RAW.read_text().splitlines(keepends=True)
+    tampered = tmp_path / RAW.name
+    tampered.write_text("".join(lines[:-1]))
+    with pytest.raises(ValueError, match="sha256"):
+        verify_checksum(tampered)
 
 
 @pytest.fixture(scope="module")
