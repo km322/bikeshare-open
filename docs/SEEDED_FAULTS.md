@@ -530,3 +530,71 @@ FAILED tests/test_leakage.py::test_no_forbidden_features - AssertionError: fo...
 ```
 
 Caught by test_no_forbidden_features and test_every_model_input_is_classified, both in tests/test_leakage.py, so the hook fired with them at the Edit, and by test_every_raw_column_is_classified in tests/test_contract.py. Turns to fix: 5. (1) ran make test and saw three failures naming casual; (2) read src/config.py; (3) read src/features.py; (4) removed + ["casual"] from feature_columns; (5) reran make test: 22 passed.
+
+## Fault 2: .shift(1) deleted from cnt_roll_7
+
+Seeded with `Edit` through `/seed-fault`, then fixed in a fresh `claude` session (qwen3.5:9b, venv active) given only: "`make test` is red. Fix it from the test output. Do not use git to restore files, and do not commit."
+
+Change:
+
+```diff
+diff --git a/src/features.py b/src/features.py
+index 35fbd8f..be43540 100644
+--- a/src/features.py
++++ b/src/features.py
+@@ -73,7 +73,7 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
+     # literal number; LAG_WARMUP must equal the longest one (28). -----------
+     out["cnt_lag_1"] = out[TARGET].shift(1)
+     out["cnt_lag_7"] = out[TARGET].shift(7)
+-    out["cnt_roll_7"] = out[TARGET].shift(1).rolling(7).mean()
++    out["cnt_roll_7"] = out[TARGET].rolling(7).mean()
+     out["cnt_roll_28"] = out[TARGET].shift(1).rolling(28).mean()
+ 
+     return out.dropna().reset_index(drop=True)
+```
+
+Hook stderr (the hook script re-run on the edited file; the same text came back to the agent after the `Edit`):
+
+```text
+Leakage tests failed after editing /Users/ketan/Downloads/DSC_180A/bikeshare-open/src/features.py:
+    def test_rolling_mean_excludes_today(feats):
+        """For every row whose 7-day window is complete, cnt_roll_7 equals that window's mean."""
+        by_date = feats.set_index("dteday")[TARGET]
+        checked = 0
+        for date, lag in feats.set_index("dteday").cnt_roll_7.items():
+            window = [date - pd.Timedelta(days=k) for k in range(1, 8)]
+            if all(d in by_date.index for d in window):
+                expected = sum(by_date[d] for d in window) / 7
+>               assert lag == pytest.approx(expected), f"roll_7 mismatch at {date.date()}"
+E               AssertionError: roll_7 mismatch at 2011-02-07
+E               assert 1497.7142857142858 == 1467.57142857...7 ± 0.00146757
+E                 
+E                 comparison failed
+E                 Obtained: 1497.7142857142858
+E                 Expected: 1467.5714285714287 ± 0.00146757
+
+tests/test_leakage.py:95: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_leakage.py::test_rolling_mean_excludes_today - AssertionErr...
+1 failed, 11 passed in 0.40s
+```
+
+Red run:
+
+```text
+$ python -m pytest tests/ -q --tb=line -p no:cacheprovider
+..............F.......                                                   [100%]
+=================================== FAILURES ===================================
+E   AssertionError: roll_7 mismatch at 2011-02-07
+    assert 1497.7142857142858 == 1467.57142857...7 ± 0.00146757
+      
+      comparison failed
+      Obtained: 1497.7142857142858
+      Expected: 1467.5714285714287 ± 0.00146757
+/Users/ketan/Downloads/DSC_180A/bikeshare-open/tests/test_leakage.py:95: AssertionError: roll_7 mismatch at 2011-02-07
+=========================== short test summary info ============================
+FAILED tests/test_leakage.py::test_rolling_mean_excludes_today - AssertionErr...
+1 failed, 21 passed in 0.98s
+```
+
+Caught by test_rolling_mean_excludes_today, which is in tests/test_leakage.py, so the hook fired with it at the Edit; it now checks every row with a complete window, so it names the first bad date, 2011-02-07. Turns to fix: 4. (1) ran make test and saw the one failure; (2) read src/features.py; (3) restored .shift(1) in cnt_roll_7; (4) reran make test: 22 passed.
