@@ -1,0 +1,35 @@
+{
+  "n_test": 184,
+  "ridge": {
+    "mae": 879.3,
+    "median_ae": 806.5,
+    "p90_ae": 1711.1,
+    "mae_without_sandy": 854.3,
+    "mae_on_worst_days": 2216.0,
+    "bias": -426.7
+  },
+  "baseline_persistence": {
+    "mae": 840.1,
+    "median_ae": 506.5,
+    "p90_ae": 1960.2,
+    "mae_without_sandy": 819.0,
+    "mae_on_worst_days": 3499.0,
+    "bias": 16.1
+  },
+  "share_of_days_closer": {
+    "ridge": 0.429,
+    "baseline_persistence": 0.571
+  },
+  "worst_days": [
+    "2012-10-31",
+    "2012-10-07",
+    "2012-10-29",
+    "2012-09-19",
+    "2012-10-28",
+    "2012-08-19",
+    "2012-07-22",
+    "2012-10-03",
+    "2012-09-18",
+    "2012-11-22"
+  ]
+}
