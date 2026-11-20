@@ -1,0 +1,58 @@
+{
+  "split": "valid",
+  "level": "cnt_roll_28",
+  "n_train": 306,
+  "n_valid": 182,
+  "baselines": {
+    "baseline_mean": {
+      "r2": -0.6894,
+      "mae": 1877.3
+    },
+    "baseline_persistence": {
+      "r2": 0.4507,
+      "mae": 900.6
+    }
+  },
+  "transforms": {
+    "cnt": {
+      "ridge": {
+        "r2": 0.6839,
+        "mae": 777.5
+      },
+      "hgb": {
+        "r2": 0.2415,
+        "mae": 1296.6
+      }
+    },
+    "log": {
+      "ridge": {
+        "r2": 0.374,
+        "mae": 983.3
+      },
+      "hgb": {
+        "r2": 0.184,
+        "mae": 1325.5
+      }
+    },
+    "diff_roll28": {
+      "ridge": {
+        "r2": 0.6932,
+        "mae": 761.3
+      },
+      "hgb": {
+        "r2": 0.695,
+        "mae": 716.2
+      }
+    },
+    "ratio_roll28": {
+      "ridge": {
+        "r2": 0.4039,
+        "mae": 1069.0
+      },
+      "hgb": {
+        "r2": 0.6754,
+        "mae": 732.4
+      }
+    }
+  }
+}
