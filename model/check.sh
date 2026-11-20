@@ -20,7 +20,8 @@ ctx=$(ollama show "$MODEL" 2>/dev/null | awk '/num_ctx/ {print $2}' | head -1)
 if [ -z "$ctx" ] || [ "$ctx" -lt 65536 ]; then
   echo "FAIL: '$MODEL' has num_ctx=${ctx:-unset}; need >= 65536. Rebuild with: make model" >&2; exit 1
 fi
-if ! ollama show "$MODEL" 2>/dev/null | grep -qi "tools"; then
+output=$(ollama show "$MODEL" 2>&1)
+if ! printf '%s' "$output" | grep -qi "^[[:space:]]*tools[[:space:]]*$"; then
   echo "WARN: '$MODEL' does not advertise tool support; Claude Code needs it." >&2
 fi
 

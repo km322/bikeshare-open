@@ -26,7 +26,9 @@ BASE ?= qwen3.5:9b
 
 model:
 	ollama pull $(BASE)
-	sed "s|^FROM .*|FROM $(BASE)|" model/Modelfile | ollama create bikeshare-coder -f -
+	sed "s|^FROM .*|FROM $(BASE)|" model/Modelfile > /tmp/bikeshare-modelfile
+	ollama create bikeshare-coder -f /tmp/bikeshare-modelfile
+	rm -f /tmp/bikeshare-modelfile
 
 check-model:
 	bash model/check.sh
