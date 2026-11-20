@@ -1,0 +1,51 @@
+{
+  "feature": "cnt_roll_28",
+  "n_train": 306,
+  "n_valid": 182,
+  "valid": {
+    "baseline_mean": {
+      "with": {
+        "r2": -0.6894,
+        "mae": 1877.3
+      },
+      "without": {
+        "r2": -0.6894,
+        "mae": 1877.3
+      },
+      "delta_r2": 0.0
+    },
+    "baseline_persistence": {
+      "with": {
+        "r2": 0.4507,
+        "mae": 900.6
+      },
+      "without": {
+        "r2": 0.4507,
+        "mae": 900.6
+      },
+      "delta_r2": 0.0
+    },
+    "ridge": {
+      "with": {
+        "r2": 0.6839,
+        "mae": 777.5
+      },
+      "without": {
+        "r2": 0.6462,
+        "mae": 835.5
+      },
+      "delta_r2": 0.0377
+    },
+    "hgb": {
+      "with": {
+        "r2": 0.2415,
+        "mae": 1296.6
+      },
+      "without": {
+        "r2": 0.1929,
+        "mae": 1330.6
+      },
+      "delta_r2": 0.0486
+    }
+  }
+}

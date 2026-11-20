@@ -8,6 +8,7 @@ METRICS = ROOT / "reports" / "metrics.json"
 EXERCISE4 = ROOT / "reports" / "exercise4.json"
 EXERCISE4_FINAL = ROOT / "reports" / "exercise4_final.json"
 EXERCISE5 = ROOT / "reports" / "exercise5.json"
+ABLATION = ROOT / "reports" / "ablation.json"
 
 # Daily Capital Bikeshare counts (Fanaee-T & Gama). Canonical home:
 #   https://archive.ics.uci.edu/dataset/275/bike+sharing+dataset
