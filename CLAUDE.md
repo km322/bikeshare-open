@@ -9,6 +9,16 @@ rides) from calendar, weather, and lagged-demand features.
 - `make train` - fit models, write `reports/metrics.json`
 - `make test` - pytest; run this before claiming anything works
 - `make all` - the three pipeline stages in order
+- Headline reproduction: `make all && git diff --exit-code reports/metrics.json`
+  must regenerate the committed metrics byte for byte.
+- `python -m src.exercise4` / `src.exercise5` - Exercises 4-5, outside
+  `make all`. `exercise4 --final` scores test once, after the choice is committed.
+- `python -m src.ablation <feature>` - validation R^2 with/without a feature
+  on identical rows. Never test.
+- Skills: `/new-feature <name>` for every new feature; `/seed-fault
+  <description>` to break `src/` on purpose and record it in
+  `docs/SEEDED_FAULTS.md`.
+- Launch `claude` with `.venv` activated: the leakage hook runs `python`.
 
 ## Non-negotiable rules
 - **Never** put `casual` or `registered` in a feature set:
@@ -23,6 +33,13 @@ rides) from calendar, weather, and lagged-demand features.
 - Report the mean baseline **and** the persistence baseline (yesterday's
   count) alongside every model. A negative R^2 is a finding, not a bug
   to hide.
+- Every raw column and every model input is classified in `src/config.py`.
+  A new feature goes in `ENGINEERED_COLS`, never one computed from a
+  `FORBIDDEN` column: registering a leak also turns the test green.
+- Lag windows are literal (`shift(7)`, `rolling(28)`), never `LAG_WARMUP`.
+  Raise `LAG_WARMUP` to the longest window when you add one.
+- Never modify `data/raw/`. `make data` checks `RAW_SHA256`; restore with
+  `git checkout -- data/raw/`.
 
 ## Style
 - Standard library, pandas, scikit-learn only. No new dependencies
