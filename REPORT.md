@@ -109,8 +109,10 @@ predict the deviation from the recent level, which is roughly stable across
 years, instead of the level itself, which is not.
 
 Caveats: the choice is the best of four on 182 validation days, and only 0.02
-ahead of the ratio. On test, the transformed hgb ties ridge on R^2 (0.6335 vs
-0.635) and wins on MAE (731.8 vs 856.7), so the case for it is MAE.
+ahead of the ratio. Before choosing, the Exercise 3 audit had already shown a
+teammate's test result for a similar transform (`cnt - cnt_roll_7`). On test,
+the transformed hgb ties ridge on R^2 (0.6335 vs 0.635) and wins on MAE (731.8
+vs 856.7), so the case for it is MAE.
 
 ## Exercise 5: ridge vs persistence
 

@@ -162,7 +162,7 @@ FAILED tests/test_leakage.py::test_every_model_input_is_classified - Assertio...
 1 failed, 11 passed in 0.43s
 ```
 
-Red run:
+Red run (captured at fae91da, before the two checksum tests existed, so 20 tests):
 
 ```text
 $ python -m pytest tests/ -q --tb=line -p no:cacheprovider
