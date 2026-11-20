@@ -57,6 +57,14 @@ REDUNDANT_COLS = {"season", "mnth", "weekday"}
 # The calendar index, not a feature.
 DATE_COL = "dteday"
 
+# Every new feature must be added here or test_every_model_input_is_classified fails.
+# These are the 11 features build_features creates from calendar, weather, and lagged demand.
+ENGINEERED_COLS = {
+    "dayofweek", "is_weekend", "is_holiday", "is_workday",
+    "month_sin", "month_cos", "weather_severity",
+    "cnt_lag_1", "cnt_lag_7", "cnt_roll_7", "cnt_roll_28"
+}
+
 # Temporal split: train on 2011, validate on H1 2012, test on H2 2012.
 TRAIN_END = "2011-12-31"
 VALID_END = "2012-06-30"

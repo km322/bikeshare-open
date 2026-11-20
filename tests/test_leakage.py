@@ -7,7 +7,7 @@ scores R^2 = 1.0 and looks brilliant while having learned nothing.
 import pandas as pd
 import pytest
 
-from src.config import FORBIDDEN, TARGET
+from src.config import ENGINEERED_COLS, FORBIDDEN, RAW_FEATURE_COLS, TARGET
 from src.features import build_features, feature_columns, encode_weather
 from src.ingest import load_raw
 
@@ -15,6 +15,15 @@ from src.ingest import load_raw
 @pytest.fixture(scope="module")
 def feats():
     return build_features(load_raw())
+
+
+def test_every_model_input_is_classified(feats):
+    """The model input must be exactly the classified features. A leaked column
+    copied under an innocent name (out["members"] = out["registered"]) passed
+    every other test."""
+    cols = set(feature_columns(feats))
+    expected = RAW_FEATURE_COLS | ENGINEERED_COLS
+    assert cols == expected, f"unclassified model inputs: {sorted(cols - expected)}; missing: {sorted(expected - cols)}"
 
 
 def test_weather_encoder_rejects_unknown_labels():
@@ -43,6 +52,7 @@ def test_no_forbidden_features(feats):
 
 
 def test_lags_are_true_calendar_lags(feats):
+
     """cnt_lag_1 for date d must equal cnt on d-1, in calendar days."""
     by_date = feats.set_index("dteday")[TARGET]
     checked = 0
