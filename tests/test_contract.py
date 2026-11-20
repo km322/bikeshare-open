@@ -45,12 +45,12 @@ def test_only_expected_rows_are_dropped(raw, feats):
 
 
 def test_beats_the_mean_baseline(feats):
-    """A model that cannot beat predicting the training mean is not a result."""
+    """Scores on VALIDATION, not TEST; tuning on test leaks information and inflates R^2."""
     cols = feature_columns(feats)
-    train, _, test = temporal_split(feats)
+    train, valid, _ = temporal_split(feats)
     ridge = MODELS["ridge"]
     ridge.fit(train[cols], train[TARGET])
-    assert r2_score(test[TARGET], ridge.predict(test[cols])) > 0.4
+    assert r2_score(valid[TARGET], ridge.predict(valid[cols])) > 0.4
 
 
 def test_persistence_baseline_is_reported():
@@ -73,7 +73,7 @@ def test_every_raw_column_is_classified(raw, feats):
     # Assert no column appears in two classes
     total_size = sum(len(s) for s in classified_sets)
     union_size = len(set().union(*classified_sets))
-    assert total_size == union_size, f"a column is in two classes"
+    assert total_size == union_size, "a column is in two classes"
 
     # Assert all raw columns are covered by a classification
     union_cols = set().union(*classified_sets)

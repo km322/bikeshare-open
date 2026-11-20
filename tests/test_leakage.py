@@ -75,13 +75,16 @@ def test_lag_is_not_the_target(feats):
 
 
 def test_rolling_mean_excludes_today(feats):
-    """cnt_roll_7 must be the mean of the 7 calendar days *before* today."""
+    """For every row whose 7-day window is complete, cnt_roll_7 equals that window's mean."""
     by_date = feats.set_index("dteday")[TARGET]
-    date = feats.dteday.iloc[200]
-    window = [date - pd.Timedelta(days=k) for k in range(1, 8)]
-    if all(d in by_date.index for d in window):
-        expected = sum(by_date[d] for d in window) / 7
-        assert feats.set_index("dteday").cnt_roll_7[date] == pytest.approx(expected)
+    checked = 0
+    for date, lag in feats.set_index("dteday").cnt_roll_7.items():
+        window = [date - pd.Timedelta(days=k) for k in range(1, 8)]
+        if all(d in by_date.index for d in window):
+            expected = sum(by_date[d] for d in window) / 7
+            assert lag == pytest.approx(expected), f"roll_7 mismatch at {date.date()}"
+            checked += 1
+    assert checked > 600, f"only {checked} rows had a complete 7-day window"
 
 
 def test_no_missing_values(feats):
