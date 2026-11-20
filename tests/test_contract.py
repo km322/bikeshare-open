@@ -3,7 +3,8 @@ import pandas as pd
 import pytest
 from sklearn.metrics import r2_score
 
-from src.config import LAG_WARMUP, TARGET
+from src.config import (DATE_COL, ENCODED_COLS, FORBIDDEN, LAG_WARMUP,
+                         RAW_FEATURE_COLS, REDUNDANT_COLS, TARGET)
 from src.features import build_features, feature_columns, reindex_to_calendar
 from src.ingest import load_raw
 from src.train import MODELS, temporal_split
@@ -56,3 +57,29 @@ def test_persistence_baseline_is_reported():
     """The baseline that matters for a lag-driven model is 'yesterday again'.
     It must be in the comparison, whatever its score."""
     assert "baseline_persistence" in MODELS
+
+
+def test_every_raw_column_is_classified(raw, feats):
+    """A new raw column must not enter the model silently.
+
+    feature_columns() is a denylist, so any unclassified numeric column would
+    become a feature. Every raw column must sit in exactly one class in
+    src/config.py (FORBIDDEN, RAW_FEATURE_COLS, ENCODED_COLS, REDUNDANT_COLS,
+    DATE_COL), and the raw columns that reach the model must be exactly
+    RAW_FEATURE_COLS."""
+    classified_sets = [frozenset(FORBIDDEN), frozenset(RAW_FEATURE_COLS), frozenset(ENCODED_COLS),
+                       frozenset(REDUNDANT_COLS), frozenset({DATE_COL})]
+
+    # Assert no column appears in two classes
+    total_size = sum(len(s) for s in classified_sets)
+    union_size = len(set().union(*classified_sets))
+    assert total_size == union_size, f"a column is in two classes"
+
+    # Assert all raw columns are covered by a classification
+    union_cols = set().union(*classified_sets)
+    unclassified = set(raw.columns) - union_cols
+    assert not unclassified, f"unclassified columns: {sorted(unclassified)}"
+
+    # Assert only RAW_FEATURE_COLS reach the model (feature_columns excludes FORBIDDEN and non-numeric)
+    reaching_model = set(feature_columns(feats)) & set(raw.columns)
+    assert reaching_model == RAW_FEATURE_COLS, f"raw columns that reach the model: {sorted(reaching_model)}"

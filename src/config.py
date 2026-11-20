@@ -45,6 +45,18 @@ UNVERIFIED_COLS = {"cnt_2d_bfr"}
 # What feature_columns() and the tests actually enforce.
 FORBIDDEN = LEAKAGE_COLS | TIME_INDEX_COLS | UNVERIFIED_COLS
 
+# Numeric weather readings fed to the model as they are.
+RAW_FEATURE_COLS = {"temp", "atemp", "hum", "windspeed"}
+
+# Y/N and GOOD/MISTY/BAD labels; build_features encodes them as is_holiday, is_workday, weather_severity.
+ENCODED_COLS = {"holiday", "workday", "weather"}
+
+# Text labels; build_features derives month_sin/month_cos and dayofweek from dteday instead.
+REDUNDANT_COLS = {"season", "mnth", "weekday"}
+
+# The calendar index, not a feature.
+DATE_COL = "dteday"
+
 # Temporal split: train on 2011, validate on H1 2012, test on H2 2012.
 TRAIN_END = "2011-12-31"
 VALID_END = "2012-06-30"

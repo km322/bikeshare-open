@@ -8,13 +8,24 @@ import pandas as pd
 import pytest
 
 from src.config import FORBIDDEN, TARGET
-from src.features import build_features, feature_columns
+from src.features import build_features, feature_columns, encode_weather
 from src.ingest import load_raw
 
 
 @pytest.fixture(scope="module")
 def feats():
     return build_features(load_raw())
+
+
+def test_weather_encoder_rejects_unknown_labels():
+    """The encoder must raise on an unknown label, not silently produce NaN."""
+    # The raw file has "GOOD" / "MISTY" / "BAD"; an attacker or corrupted data
+    # might introduce "SNOW". If encode_weather just produces NaN for SNOW, a
+    # dropna() would hide it without anyone noticing. The raise makes the
+    # problem visible during feature building rather than at training time.
+    s = pd.Series(["GOOD", "MISTY", "SNOW"])
+    with pytest.raises(ValueError, match="SNOW"):
+        encode_weather(s)
 
 
 def test_leakage_identity_holds(feats):
