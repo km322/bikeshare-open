@@ -29,10 +29,10 @@ def test_only_expected_rows_are_dropped(raw, feats):
     """Rows may only vanish for the lag warm-up or downstream of a genuinely
     absent day -- never because an encoder produced a silent NaN.
 
-    Accounting: the first LAG_WARMUP days have no complete history. Each
-    absent calendar day m costs the LAG_WARMUP rows after it (cnt_lag_1 is
-    NaN on m+1, cnt_roll_7 is NaN on m+1..m+7, cnt_lag_7 on m+7; their
-    union is 7 rows). Day m itself was never in `raw`, so it is not a loss.
+    Accounting: cnt_roll_28, the longest window, is NaN on the 28 days after
+    each absent day m and its NaNs cover every shorter feature's, so each
+    absent day costs LAG_WARMUP rows; here 28 warm-up + 28 after 2011-03-10
+    = 56. Day m itself was never in `raw`, so it is not a loss.
     The bound is exact for the current feature set; add a longer lag and
     LAG_WARMUP in src/config.py must grow with it.
     """

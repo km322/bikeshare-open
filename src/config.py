@@ -51,5 +51,6 @@ VALID_END = "2012-06-30"
 
 # Longest lag window in src/features.py. The first LAG_WARMUP calendar days
 # have no complete history and are dropped; tests/test_contract.py uses this
-# to bound how many rows may legitimately disappear.
-LAG_WARMUP = 7
+# to bound how many rows may legitimately disappear. Because windows are
+# literal numbers, LAG_WARMUP must equal the longest one (28 for cnt_roll_28).
+LAG_WARMUP = 28

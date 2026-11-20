@@ -43,6 +43,22 @@ def test_lags_are_true_calendar_lags(feats):
     assert checked > 600, "too few rows actually verified"
 
 
+def test_lag_7_is_a_true_7_day_lag(feats):
+    """cnt_lag_7 for date d must equal cnt on d-7 calendar days, not 28.
+
+    No other test checks cnt_lag_7, which is how a window tied to
+    LAG_WARMUP could silently become a 28-day lag.
+    """
+    by_date = feats.set_index("dteday")[TARGET]
+    checked = 0
+    for date, lag in feats.set_index("dteday").cnt_lag_7.items():
+        prev = date - pd.Timedelta(days=7)
+        if prev in by_date.index:
+            assert lag == pytest.approx(by_date[prev]), f"bad lag_7 at {date.date()}"
+            checked += 1
+    assert checked > 600, "too few rows actually verified for cnt_lag_7"
+
+
 def test_lag_is_not_the_target(feats):
     assert not (feats.cnt_lag_1 == feats[TARGET]).all()
 
